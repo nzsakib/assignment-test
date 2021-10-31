@@ -1,19 +1,40 @@
 # Instruction to run the project
+This project has enabled debugbar for debugging purposes.
 ## Setup Environment
-1. Copy `.env.example` as `.env`
+1. Clone the repo first: 
+```
+git clone git@github.com:nzsakib/assignment-test.git sender-test
+```
+2. Copy `.env.example` as `.env`
 ```
 cp .env.example .env
 ```
 ##### Requirement: 
 - The project uses docker and Laravel sail for easier development. 
 - Make sure docker is installed in your host environment. 
-2. Run this command to build and start the containers
+
+3. Run this command to build and start the containers
 ```
 ./vendor/bin/sail up -d
 ```
-3. Migrate the database. It will import the necessary data required.
+4. Run this command to install composer dependency for the first time. You dont have to run this again in future.
+```
+docker run --rm \
+    -u "$(id -u):$(id -g)" \
+    -v $(pwd):/var/www/html \
+    -w /var/www/html \
+    laravelsail/php80-composer:latest \
+    composer install --ignore-platform-reqs
+6. go to `localhost:9090` on browser to browse the project.
+```
+5. Migrate the database. It will import the necessary data required.
 ```
 ./vendor/bin/sail artisan migrate
 ```
-4. go to `localhost:9090` on browser to browse the project.
+6. go to `localhost:9090` on browser to browse the project.
 
+
+7. If you want to access redis on shell run this command: 
+```
+./vendor/bin/sail redis
+```
