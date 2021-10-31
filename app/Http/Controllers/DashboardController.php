@@ -4,25 +4,24 @@ namespace App\Http\Controllers;
 
 use App\Domain\Users\Actions\GetUserByBirthdayAction;
 use App\Domain\Users\DataTransferObjects\UserFilterData;
-use App\Models\User;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        request()->validate([
-            'year'  => 'numeric',
-            'month' => 'numeric|min:1|max:12',
+        $request->validate([
+            'year'  => 'numeric|nullable',
+            'month' => 'numeric|min:1|max:12|nullable',
         ]);
 
         $reqData = new UserFilterData([
-            'month' => request()->get('month'),
-            'year'  => request()->get('year'),
+            'month' => $request->get('month'),
+            'year'  => $request->get('year'),
         ]);
 
-        $data = (new GetUserByBirthdayAction())->execute($reqData, 1);
-// dd($data);
+        $data = (new GetUserByBirthdayAction())->execute($reqData, $request->get('page', 1));
+
         return view('dashboard', [
             'data' => $data,
         ]);

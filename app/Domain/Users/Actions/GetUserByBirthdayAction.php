@@ -2,61 +2,34 @@
 
 namespace App\Domain\Users\Actions;
 
+use App\Domain\Users\Cache\RedisPaginator;
 use App\Domain\Users\QueryBuilders\UserFilter;
 use Illuminate\Pagination\LengthAwarePaginator;
 use App\Domain\Users\DataTransferObjects\UserFilterData;
 
 class GetUserByBirthdayAction
 {
-    const TAG      = 'user_filter';
-    const PER_PAGE = 20;
-
-    public function execute(UserFilterData $filterData, int $page = 1)
+    /**
+     * Prepare the cache key and then return the result from cache if available
+     * If not, then run the DB query, then store it into the cache
+     * Finally return the result
+     */
+    public function execute(UserFilterData $filterData, int $page = 1): LengthAwarePaginator
     {
-        // construct redis key value pair
-        $main = ($filterData->year ?? '*') . ':' . ($filterData->month ?? '*');
-        $key  = $main . ':' . $page;
+        // Construct the cache key that will be used to cache the result
+        $cacheKey = ($filterData->year ?? '*') . ':' . ($filterData->month ?? '*');
 
-        // See if it exists on redis
-        if (cache()->tags([self::TAG])->has($key)) {
-            $data  = cache()->tags([self::TAG])->get($key);
-            $total = cache()->tags([self::TAG])->get($main . ':total');
+        // Get DB query
+        $query = UserFilter::whereBirthday($filterData);
 
-            return $this->prepareData($data, $total, $page);
+        // Prepare/init the paginator class
+        $paginator = new RedisPaginator($query, $cacheKey);
+
+        // We dont want to cache all result, if there are no filter key present
+        if ($cacheKey === '*:*') {
+            $paginator->skipCaching();
         }
 
-        // if not then query database
-        $query = UserFilter::whereBirthday($filterData);
-        // dd($query->limit(20)->get()->toArray());
-        // cache on redis
-        cache()->tags([self::TAG])->flush();
-
-        $index = 1;
-        $query->chunkById(200, function ($users) use (&$index, $main) {
-            $chunked = $users->chunk(20);
-
-            foreach ($chunked as $result) {
-                $index_key = $main . ':' . $index;
-
-                cache()->tags([self::TAG])->put($index_key, json_encode($result), 60);
-
-                $index++;
-            }
-        });
-
-        $total   = $query->count();
-        $current = $page;
-
-        cache()->tags([self::TAG])->put($main . ':total', $total);
-        $data = cache()->tags([self::TAG])->get($key);
-
-        return $this->prepareData($data, $total, $current);
-    }
-
-    private function prepareData(string $data, int $total, int $current)
-    {
-        $data = json_decode($data);
-
-        return new LengthAwarePaginator($data, $total, self::PER_PAGE, $current);
+        return $paginator->paginate($page);
     }
 }
