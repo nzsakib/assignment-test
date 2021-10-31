@@ -25,7 +25,11 @@ class GetUserByBirthdayAction
         // Prepare/init the paginator class
         $paginator = new RedisPaginator($query, $cacheKey);
 
-        // We dont want to cache all result, if there are no filter key present
+        /**
+         * I intentionally skipped caching for all results
+         * It can take a while to cache 100k record on user session.
+         * We can run the caching on background job to make it seemless for end user later.
+         */
         if ($cacheKey === '*:*') {
             $paginator->skipCaching();
         }
