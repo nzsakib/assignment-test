@@ -39,8 +39,6 @@ docker run --rm \
 
 6. go to `localhost:9090` on browser to browse the project.
 
-6. go to `localhost:9090` on browser to browse the project.
-
 7. If you want to access redis on shell run this command: 
 ```
 ./vendor/bin/sail redis
